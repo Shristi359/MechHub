@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  postgres:
+    platform: linux/amd64
+    image: postgis/postgis:16-3.4
+    container_name: mechhub-db
+    environment:
+      POSTGRES_DB: mechhub
+      POSTGRES_USER: mechhub
+      POSTGRES_PASSWORD: mechhub_dev_2026
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mechhub"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    platform: linux/amd64
+    image: redis:7-alpine
+    container_name: mechhub-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:

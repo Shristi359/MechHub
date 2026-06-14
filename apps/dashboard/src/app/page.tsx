@@ -1,65 +1,89 @@
-import React from 'react';
-import { Wrench } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Wrench, Shield, Zap } from 'lucide-react';
 
-export default function LoginPage() {
+export default function LandingPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-950 p-4 font-sans text-neutral-100">
-      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-8 shadow-2xl">
-        
-        {/* Logo */}
-        <div className="flex flex-col items-center justify-center mb-8">
-          <div className="h-16 w-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-4 border border-blue-500/20">
-            <Wrench className="h-8 w-8 text-blue-500" />
+    <div className="min-h-screen bg-neutral-950 text-white flex flex-col">
+      {/* Navbar */}
+      <header className="border-b border-neutral-800 bg-neutral-900/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Wrench className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-bold text-xl tracking-tight">MechHub</span>
           </div>
-          <h1 className="text-2xl font-bold">MechHub <span className="text-blue-500">Ops</span></h1>
-          <p className="text-neutral-500 text-sm mt-2">Zone Captain Dashboard</p>
+          <div className="flex items-center gap-4">
+            <Link 
+              href="/login"
+              className="text-sm font-medium text-neutral-300 hover:text-white transition-colors"
+            >
+              Portal Login
+            </Link>
+            <Link 
+              href="/login"
+              className="text-sm font-medium bg-white text-black px-4 py-2 rounded-full hover:bg-neutral-200 transition-colors"
+            >
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8 py-20">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm mb-8">
+          <Zap className="h-4 w-4" />
+          <span>Now operating in Kathmandu Valley</span>
+        </div>
+        
+        <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight mb-6 max-w-4xl">
+          On-demand vehicle repair, <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 to-cyan-300">anywhere.</span>
+        </h1>
+        
+        <p className="text-lg sm:text-xl text-neutral-400 max-w-2xl mb-10">
+          MechHub connects stranded drivers with the nearest qualified mechanics instantly. Get back on the road safely and securely.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <Link 
+            href="/login"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full font-semibold transition-all hover:scale-105 active:scale-95"
+          >
+            Access Dispatch Console
+            <ArrowRight className="h-5 w-5" />
+          </Link>
+          <a 
+            href="#download"
+            className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white px-8 py-4 rounded-full font-semibold transition-all"
+          >
+            Download Mobile App
+          </a>
         </div>
 
-        {/* Login Form */}
-        <form className="space-y-5" action="/dashboard">
-          <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-1.5" htmlFor="phone">
-              Phone Number
-            </label>
-            <div className="flex">
-              <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-neutral-700 bg-neutral-800 text-neutral-400 text-sm">
-                +977
-              </span>
-              <input
-                type="tel"
-                id="phone"
-                className="flex-1 block w-full rounded-none rounded-r-lg bg-neutral-950 border border-neutral-700 text-neutral-100 px-4 py-2.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="98XXXXXXXX"
-                required
-              />
-            </div>
+        {/* Features grid */}
+        <div className="grid sm:grid-cols-3 gap-8 max-w-5xl mt-24 text-left">
+          <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-2xl">
+            <Shield className="h-8 w-8 text-blue-400 mb-4" />
+            <h3 className="text-xl font-bold mb-2">Verified Mechanics</h3>
+            <p className="text-neutral-400">Every professional on our network is background-checked and highly rated.</p>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-1.5" htmlFor="otp">
-              One-Time Password (OTP)
-            </label>
-            <input
-              type="text"
-              id="otp"
-              className="block w-full rounded-lg bg-neutral-950 border border-neutral-700 text-neutral-100 px-4 py-2.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-center tracking-[0.5em]"
-              placeholder="••••••"
-              maxLength={6}
-            />
-            <p className="text-xs text-neutral-500 mt-2 text-right">
-              <a href="#" className="hover:text-blue-400 transition-colors">Send OTP</a>
-            </p>
+          <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-2xl">
+            <Zap className="h-8 w-8 text-yellow-400 mb-4" />
+            <h3 className="text-xl font-bold mb-2">Instant Dispatch</h3>
+            <p className="text-neutral-400">Our routing algorithm finds the closest available help within seconds.</p>
           </div>
+          <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-2xl">
+            <Wrench className="h-8 w-8 text-green-400 mb-4" />
+            <h3 className="text-xl font-bold mb-2">Fair Pricing</h3>
+            <p className="text-neutral-400">Transparent upfront quotes with no hidden roadside exploitation fees.</p>
+          </div>
+        </div>
+      </main>
 
-          <button
-            type="submit"
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-neutral-900 transition-colors"
-          >
-            Sign In
-          </button>
-        </form>
-
-      </div>
+      <footer className="border-t border-neutral-800 py-8 text-center text-neutral-500 text-sm">
+        <p>© 2026 MechHub. All rights reserved.</p>
+      </footer>
     </div>
   );
 }

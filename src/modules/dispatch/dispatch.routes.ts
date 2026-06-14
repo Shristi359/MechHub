@@ -1,25 +1,24 @@
 import { FastifyInstance } from 'fastify';
+import { ZodTypeProvider } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import { authenticate } from '../../middleware/authenticate';
 import { dispatchNewJob } from './dispatch.service';
 
-export async function dispatchRoutes(app: FastifyInstance) {
+export async function dispatchRoutes(fastify: FastifyInstance) {
+    const app = fastify.withTypeProvider<ZodTypeProvider>();
     app.post('/jobs', {
         preHandler: [authenticate],
         schema: {
-            body: {
-                type: 'object',
-                required: ['serviceTypeId', 'lat', 'lng'],
-                properties: {
-                    serviceTypeId:      { type: 'string', format: 'uuid' },
-                    lat:                { type: 'number', minimum: -90, maximum: 90 },
-                    lng:                { type: 'number', minimum: -180, maximum: 180 },
-                    problemDescription: { type: 'string', maxLength: 500 },
-                },
-            },
+            body: z.object({
+                serviceTypeId: z.string().uuid(),
+                lat: z.number().min(-90).max(90),
+                lng: z.number().min(-180).max(180),
+                problemDescription: z.string().max(500).optional(),
+            }),
         },
     }, async (req, reply) => {
         const driverId = (req as any).user.id;
-        const { serviceTypeId, lat, lng, problemDescription } = req.body as any;
+        const { serviceTypeId, lat, lng, problemDescription } = req.body;
 
         const result = await dispatchNewJob({
             driverId, serviceTypeId, lat, lng, problemDescription,

@@ -1,12 +1,20 @@
 import { FastifyInstance } from 'fastify';
+import { ZodTypeProvider } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import { authenticate } from '../../middleware/authenticate';
 import { acceptJob } from './jobs.service';
 import { submitQuote, confirmQuote } from './quote.service';
 import { completeJob } from './complete.service';
 
-export async function jobRoutes(app: FastifyInstance) {
-    app.post('/jobs/:jobId/accept', { preHandler: [authenticate] }, async (req, reply) => {
-        const { jobId } = req.params as { jobId: string };
+export async function jobRoutes(fastify: FastifyInstance) {
+    const app = fastify.withTypeProvider<ZodTypeProvider>();
+    app.post('/jobs/:jobId/accept', { 
+        preHandler: [authenticate],
+        schema: {
+            params: z.object({ jobId: z.string().uuid() })
+        }
+    }, async (req, reply) => {
+        const { jobId } = req.params;
         const mechanicId = (req as any).user.id;
         const result = await acceptJob(jobId, mechanicId);
         if (result.status === 'ALREADY_TAKEN') {
@@ -16,10 +24,16 @@ export async function jobRoutes(app: FastifyInstance) {
         return reply.status(200).send({ status: 'ASSIGNED', jobId });
     });
 
-    app.post('/jobs/:jobId/quote', { preHandler: [authenticate] }, async (req, reply) => {
-        const { jobId } = req.params as { jobId: string };
+    app.post('/jobs/:jobId/quote', { 
+        preHandler: [authenticate],
+        schema: {
+            params: z.object({ jobId: z.string().uuid() }),
+            body: z.object({ amount: z.number().positive() })
+        }
+    }, async (req, reply) => {
+        const { jobId } = req.params;
         const mechanicId = (req as any).user.id;
-        const { amount } = req.body as { amount: number };
+        const { amount } = req.body;
         try {
             const result = await submitQuote(jobId, mechanicId, amount);
             return reply.send(result);
@@ -28,8 +42,13 @@ export async function jobRoutes(app: FastifyInstance) {
         }
     });
 
-    app.post('/jobs/:jobId/confirm-quote', { preHandler: [authenticate] }, async (req, reply) => {
-        const { jobId } = req.params as { jobId: string };
+    app.post('/jobs/:jobId/confirm-quote', { 
+        preHandler: [authenticate],
+        schema: {
+            params: z.object({ jobId: z.string().uuid() })
+        }
+    }, async (req, reply) => {
+        const { jobId } = req.params;
         const driverId = (req as any).user.id;
         try {
             const result = await confirmQuote(jobId, driverId);
@@ -39,8 +58,13 @@ export async function jobRoutes(app: FastifyInstance) {
         }
     });
 
-    app.post('/jobs/:jobId/complete', { preHandler: [authenticate] }, async (req, reply) => {
-        const { jobId } = req.params as { jobId: string };
+    app.post('/jobs/:jobId/complete', { 
+        preHandler: [authenticate],
+        schema: {
+            params: z.object({ jobId: z.string().uuid() })
+        }
+    }, async (req, reply) => {
+        const { jobId } = req.params;
         const mechanicId = (req as any).user.id;
         try {
             await completeJob(jobId, mechanicId);

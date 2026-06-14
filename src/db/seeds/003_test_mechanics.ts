@@ -1,7 +1,7 @@
 import { Knex } from 'knex';
 
 export async function seed(knex: Knex): Promise<void> {
-    await knex('mechanics').del();
+    // TRUNCATE handled by 001_zones.ts
 
     const kathmanduZone = await knex('zones').where({ name: 'Kathmandu' }).first();
     const lalitpurZone = await knex('zones').where({ name: 'Lalitpur' }).first();

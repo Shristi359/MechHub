@@ -3,6 +3,7 @@ import { findNearestMechanics } from './geospatial.service';
 import { calculateEstimatedFare } from './fare.service';
 import { notifyMechanicsOfJob } from '../notification/notification.service';
 import { publishEvent } from '../../events/publisher';
+import { broadcast } from '../realtime/broadcaster';
 
 export async function dispatchNewJob(params: {
     driverId: string;
@@ -37,6 +38,7 @@ export async function dispatchNewJob(params: {
 
     if (mechanics.length === 0) {
         await publishEvent('JOB_CREATED', { jobId: job.id, driverId, mechanicsFound: 0 });
+        broadcast({ type: 'JOB_CREATED', jobId: job.id, status: 'PENDING', serviceTypeId, timestamp: new Date().toISOString() });
         return { jobId: job.id, mechanicsNotified: 0, estimatedFare: 0 };
     }
 
@@ -63,6 +65,15 @@ export async function dispatchNewJob(params: {
         driverId,
         mechanicIds: mechanics.map(m => m.id),
         round: 1,
+    });
+
+    broadcast({
+        type: 'JOB_DISPATCHED',
+        jobId: job.id,
+        status: 'DISPATCHED',
+        mechanicsNotified: mechanics.length,
+        estimatedFare,
+        timestamp: new Date().toISOString(),
     });
 
     return {

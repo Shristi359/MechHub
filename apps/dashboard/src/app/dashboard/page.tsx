@@ -1,113 +1,159 @@
 import React from 'react';
-import { Users, Clock, CheckCircle, AlertTriangle, TrendingUp, DollarSign } from 'lucide-react';
+import { Users, Clock, CheckCircle, AlertTriangle, TrendingUp, DollarSign, BarChart3 } from 'lucide-react';
+import db from '@/lib/db';
+import { getRole } from '@/lib/get-role';
+import { DispatchMap, LiveFeed, RevenueChart } from '../../components/ClientComponents';
 
-export default function DashboardOverview() {
+export const dynamic = 'force-dynamic';
+
+export default async function DashboardOverview() {
+  const role = await getRole();
+  const isAdmin = role === 'admin';
+
+  // Real DB metrics
+  const [onlineMechanics, pendingJobs, completedToday, escalated, revenue] = await Promise.all([
+    db('mechanics').where('status', 'ONLINE').count('id as count').first(),
+    db('jobs').where('status', 'PENDING').count('id as count').first(),
+    db('jobs').where('status', 'COMPLETED').andWhere('created_at', '>=', db.raw('CURRENT_DATE')).count('id as count').first(),
+    db('jobs').where('dispatch_round', '>=', 2).andWhere('status', '!=', 'COMPLETED').count('id as count').first(),
+    isAdmin
+      ? db('mechanic_earnings').where('created_at', '>=', db.raw('CURRENT_DATE')).sum('gross_amount as total').first()
+      : Promise.resolve(null),
+  ]);
+
+  const totalJobs = await db('jobs').count('id as count').first();
+  const completedCount = await db('jobs').where('status', 'COMPLETED').count('id as count').first();
+  const fulfillmentRate = totalJobs?.count
+    ? ((Number(completedCount?.count) / Number(totalJobs?.count)) * 100).toFixed(1)
+    : '0.0';
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <MetricCard
           title="Online Mechanics"
-          value="42"
-          change="+3 from last hour"
-          icon={<Users className="h-6 w-6 text-green-500" />}
-          trend="up"
+          value={String(onlineMechanics?.count ?? 0)}
+          change="Currently available"
+          icon={<Users className="h-6 w-6 text-emerald-500" />}
+          color="emerald"
         />
         <MetricCard
           title="Pending Jobs"
-          value="15"
-          change="Urgent: 2 over 5 mins"
+          value={String(pendingJobs?.count ?? 0)}
+          change="Awaiting mechanic"
           icon={<AlertTriangle className="h-6 w-6 text-amber-500" />}
-          trend="down"
+          color="amber"
         />
         <MetricCard
-          title="Avg Response Time"
-          value="4.2s"
-          change="-0.5s from yesterday"
-          icon={<Clock className="h-6 w-6 text-blue-500" />}
-          trend="up"
+          title="Completed Today"
+          value={String(completedToday?.count ?? 0)}
+          change="Jobs finished"
+          icon={<CheckCircle className="h-6 w-6 text-blue-500" />}
+          color="blue"
         />
         <MetricCard
           title="Fulfillment Rate"
-          value="94.5%"
-          change="Target: 95%"
-          icon={<CheckCircle className="h-6 w-6 text-emerald-500" />}
-          trend="up"
-        />
-        <MetricCard
-          title="Escalation Rate"
-          value="12%"
-          change="Round 2+ dispatches"
+          value={`${fulfillmentRate}%`}
+          change="All-time completion"
           icon={<TrendingUp className="h-6 w-6 text-purple-500" />}
-          trend="down"
+          color="purple"
         />
         <MetricCard
-          title="Today's Revenue"
-          value="Rs. 45,200"
-          change="Platform Fees Collected"
-          icon={<DollarSign className="h-6 w-6 text-emerald-400" />}
-          trend="up"
+          title="Escalated (Round 2+)"
+          value={String(escalated?.count ?? 0)}
+          change="Currently active"
+          icon={<Clock className="h-6 w-6 text-rose-500" />}
+          color="rose"
         />
+        {isAdmin ? (
+          <MetricCard
+            title="Today's Revenue"
+            value={`Rs. ${Number(revenue?.total ?? 0).toLocaleString()}`}
+            change="Gross platform fees"
+            icon={<DollarSign className="h-6 w-6 text-emerald-400" />}
+            color="emerald"
+          />
+        ) : (
+          <MetricCard
+            title="Platform Revenue"
+            value="Restricted"
+            change="Admin access only"
+            icon={<DollarSign className="h-6 w-6 text-neutral-600" />}
+            color="neutral"
+          />
+        )}
       </div>
 
-      {/* Main Map & Activity Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
-        {/* Map Placeholder */}
-        <div className="col-span-2 bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden relative flex flex-col">
-          <div className="px-6 py-4 border-b border-neutral-800 flex justify-between items-center bg-neutral-900">
-            <h2 className="text-lg font-medium">Live Dispatch Map</h2>
-            <div className="flex gap-4 text-sm text-neutral-400">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span> Online</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Pending</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> Busy</span>
+      {/* Map + Live Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{ height: '520px' }}>
+        {/* Map */}
+        <div className="col-span-2 bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-neutral-800 flex justify-between items-center shrink-0">
+            <h2 className="text-base font-semibold text-neutral-100">Live Dispatch Map</h2>
+            <div className="flex gap-4 text-xs text-neutral-400">
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_6px_#f43f5e]" />Pending</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]" />Dispatched</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_6px_#3b82f6]" />Assigned</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]" />Done</span>
             </div>
           </div>
-          <div className="flex-1 flex items-center justify-center bg-neutral-950">
-            {/* We will add Leaflet map here later */}
-            <div className="text-center text-neutral-500">
-              <p className="mb-2">Map component will render here.</p>
-              <p className="text-sm">(Requires Leaflet integration)</p>
-            </div>
-          </div>
+          <DispatchMap />
         </div>
 
-        {/* Activity Feed Placeholder */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl flex flex-col">
-          <div className="px-6 py-4 border-b border-neutral-800">
-            <h2 className="text-lg font-medium">Recent Activity</h2>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Dummy Feed Items */}
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex gap-3 p-3 rounded-lg hover:bg-neutral-800/50 transition-colors border border-transparent hover:border-neutral-800">
-                <div className="mt-0.5">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-neutral-200">Job #120{i} Accepted</p>
-                  <p className="text-xs text-neutral-500">Mechanic Ram Kumar • 2 mins ago</p>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Live Feed */}
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden flex flex-col">
+          <LiveFeed />
         </div>
       </div>
+
+      {/* Analytics Section (Admin Only) */}
+      {isAdmin && (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden shadow-lg mt-6">
+          <div className="px-5 py-4 border-b border-neutral-800 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-neutral-100 flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-emerald-400" />
+              Platform Revenue (Last 7 Days)
+            </h2>
+          </div>
+          <div className="p-5 h-[300px]">
+            <RevenueChart />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function MetricCard({ title, value, change, icon, trend }: { title: string, value: string, change: string, icon: React.ReactNode, trend: 'up' | 'down' }) {
+function MetricCard({
+  title, value, change, icon, color,
+}: {
+  title: string;
+  value: string;
+  change: string;
+  icon: React.ReactNode;
+  color: string;
+}) {
+  const glowClasses: Record<string, string> = {
+    emerald: 'group-hover:border-emerald-500/40',
+    amber:   'group-hover:border-amber-500/40',
+    blue:    'group-hover:border-blue-500/40',
+    purple:  'group-hover:border-purple-500/40',
+    rose:    'group-hover:border-rose-500/40',
+    neutral: 'group-hover:border-neutral-700',
+  };
+
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 flex flex-col justify-between hover:border-neutral-700 transition-colors">
-      <div className="flex justify-between items-start mb-4">
+    <div className={`group bg-neutral-900 border border-neutral-800 ${glowClasses[color] ?? ''} rounded-xl p-5 flex flex-col justify-between transition-colors`}>
+      <div className="flex justify-between items-start mb-3">
         <div className="p-2 bg-neutral-950 rounded-lg border border-neutral-800">
           {icon}
         </div>
       </div>
       <div>
-        <h3 className="text-neutral-400 text-sm font-medium">{title}</h3>
+        <h3 className="text-neutral-400 text-xs font-medium uppercase tracking-wide">{title}</h3>
         <div className="text-3xl font-bold text-neutral-100 mt-1">{value}</div>
-        <p className="text-xs text-neutral-500 mt-2">{change}</p>
+        <p className="text-xs text-neutral-600 mt-1.5">{change}</p>
       </div>
     </div>
   );

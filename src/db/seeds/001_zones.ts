@@ -1,7 +1,7 @@
 import { Knex } from 'knex';
 
 export async function seed(knex: Knex): Promise<void> {
-    await knex('zones').del();
+    await knex.raw('TRUNCATE TABLE mechanic_earnings, jobs, mechanics, drivers, zones CASCADE');
 
     await knex.raw(`
         INSERT INTO zones (name, boundary) VALUES

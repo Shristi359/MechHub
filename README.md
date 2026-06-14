@@ -109,3 +109,17 @@ To run the E2E test:
 ```bash
 npx ts-node scripts/test_e2e_flow.ts
 ```
+
+
+1. Administrator Access
+
+Email: admin@mock.local
+Password: any
+2. Dispatcher Access
+
+Email: dispatcher@mock.local
+Password: any
+3. Mechanic Access
+
+Email: mechanic@mock.local
+Password: any

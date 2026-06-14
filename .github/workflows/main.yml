@@ -22,15 +22,12 @@ jobs:
           node-version: 18
           cache: 'npm'
 
-      - name: Install dependencies (Root)
+      - name: Install dependencies (Monorepo)
         run: npm ci
 
       - name: Typecheck (Backend)
-        run: npx tsc --noEmit
-
-      - name: Install dependencies (Dashboard)
-        run: npm ci
-        working-directory: ./apps/dashboard
+        run: npm run build
+        working-directory: ./apps/api
 
       - name: Build Dashboard
         run: npm run build
